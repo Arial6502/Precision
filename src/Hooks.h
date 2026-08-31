@@ -15,7 +15,7 @@ namespace Hooks
 			REL::Relocation<uintptr_t> hook3{ RELOCATION_ID(36359, 37350) };  // 5D8170, 5FCF20, UpdateMovementJob internal function
 
 			auto& trampoline = SKSE::GetTrampoline();
-			_Nullsub = trampoline.write_call<5>(hook1.address() + RELOCATION_OFFSET(0x748, 0xC26), Nullsub);            // 5B3738, 5DAB76
+			_Nullsub = trampoline.write_call<5>(hook1.address() + RELOCATION_OFFSET(0x748, 0xC26, 0xC38), Nullsub);     // 5B3738, 5DAB76
 			_ApplyMovement = trampoline.write_call<5>(hook3.address() + RELOCATION_OFFSET(0xF0, 0xFB), ApplyMovement);  // 5D8260, 5FD01B
 
 			REL::Relocation<std::uintptr_t> CharacterVtbl{ RE::VTABLE_Character[0] };
@@ -40,8 +40,6 @@ namespace Hooks
 
 		static bool ShouldSetPitchModifier(RE::Actor* a_this);
 		static void ModifyAnimationUpdateData(RE::Actor* a_this, RE::BSAnimationUpdateData& a_data);
-
-		static RE::Actor* GetActorFromRbx();
 	};
 
 	class AttackHooks
@@ -62,11 +60,11 @@ namespace Hooks
 			_ApplyPerkEntryPoint = trampoline.write_call<5>(hook1.address() + RELOCATION_OFFSET(0x343, 0x34F), ApplyPerkEntryPoint);                              // 627C73, 64D69F
 			_HitData_Populate1 = trampoline.write_call<5>(hook2.address() + RELOCATION_OFFSET(0x1B7, 0x1C6), HitData_Populate1);                                  // 628DD7, 64E926
 			_HitData_Populate2 = trampoline.write_call<5>(hook3.address() + RELOCATION_OFFSET(0xEB, 0x110), HitData_Populate2);                                   // 62917B, 64EDD0
-			_TESObjectCELL_PlaceParticleEffect = trampoline.write_call<5>(hook4.address() + RELOCATION_OFFSET(0xABD, 0xB39), TESObjectCELL_PlaceParticleEffect);  // 5F92AD, 620109
+			_TESObjectCELL_PlaceParticleEffect = trampoline.write_call<5>(hook4.address() + RELOCATION_OFFSET(0xABD, 0xB39, 0xB49), TESObjectCELL_PlaceParticleEffect);  // 5F92AD, 620109
 			_ApplyDeathForce = trampoline.write_call<5>(hook6.address() + RELOCATION_OFFSET(0x10A, 0x10A), ApplyDeathForce);                                      // 62A1DA, 65008A
 			_HitActor_GetAttackData = trampoline.write_call<5>(hook2.address() + RELOCATION_OFFSET(0xB3, 0xC2), HitActor_GetAttackData);                          // 628CD3, 64E822
 
-			_CdPointCollectorCast = trampoline.write_call<5>(hook3.address() + RELOCATION_OFFSET(0x26A, 0x294), CdPointCollectorCast);  // 6292FA, 64EF54
+			_CdPointCollectorCast = trampoline.write_call<5>(hook3.address() + RELOCATION_OFFSET(0x26A, 0x294, 0x2AC), CdPointCollectorCast);  // 6292FA, 64EF54
 
 			_HitData_GetAttackData = trampoline.write_call<5>(hook5.address() + RELOCATION_OFFSET(0xD3, 0xDD), HitData_GetAttackData);          // 742923, 76EE8D
 			_HitData_GetWeaponDamage = trampoline.write_call<5>(hook5.address() + RELOCATION_OFFSET(0x1A5, 0x1A4), HitData_GetWeaponDamage);    // 7429F5, 76EF54

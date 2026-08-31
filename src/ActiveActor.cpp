@@ -77,12 +77,12 @@ bool ActiveActor::UpdateClone()
 	// Check whether the collision group is still correct
 	bool bCollisionGroupChanged = false;
 
-	uint32_t filterInfo = 0;
+	RE::CFilter filterInfo{};
 	if (!Utils::GetActorCollisionFilterInfo(actor.get(), filterInfo)) {
 		actor->GetCollisionFilterInfo(filterInfo);
 	}
 
-	uint16_t currentCollisionGroup = filterInfo >> 16;
+	uint16_t currentCollisionGroup = filterInfo.filter >> 16;
 
 	if (collisionGroup != currentCollisionGroup) {
 		// Remove previous group from active collision groups and add the new one
@@ -112,8 +112,8 @@ bool ActiveActor::UpdateClone()
 			if (auto collidable = static_cast<RE::bhkCollisionObject*>(cloneNode->collisionObject.get())) {
 				if (auto worldObject = collidable->body.get()) {
 					if (auto hkpWorldObject = static_cast<RE::hkpWorldObject*>(worldObject->referencedObject.get())) {
-						hkpWorldObject->collidable.broadPhaseHandle.collisionFilterInfo &= (0x0000ffff);                                   // zero out collision group
-						hkpWorldObject->collidable.broadPhaseHandle.collisionFilterInfo |= (static_cast<uint32_t>(collisionGroup) << 16);  // set collision group to current
+						hkpWorldObject->collidable.broadPhaseHandle.collisionFilterInfo.filter &= (0x0000ffff);                                   // zero out collision group
+						hkpWorldObject->collidable.broadPhaseHandle.collisionFilterInfo.filter |= (static_cast<uint32_t>(collisionGroup) << 16);  // set collision group to current
 					}
 				}
 			}
@@ -265,7 +265,7 @@ void ActiveActor::FillCloneMap(RE::NiAVObject* a_clone, RE::NiAVObject* a_origin
 					if (auto worldObject = collidable->body.get()) {
 						if (auto hkpWorldObject = static_cast<RE::hkpWorldObject*>(worldObject->referencedObject.get())) {
 							auto& collisionFilterInfo = hkpWorldObject->collidable.broadPhaseHandle.collisionFilterInfo;
-							CollisionLayer layer = static_cast<CollisionLayer>(collisionFilterInfo & 0x7f);
+							CollisionLayer layer = static_cast<CollisionLayer>(collisionFilterInfo.filter & 0x7f);
 
 							// remove children that have the char controller layer
 							if (layer == CollisionLayer::kCharController) {
@@ -275,8 +275,8 @@ void ActiveActor::FillCloneMap(RE::NiAVObject* a_clone, RE::NiAVObject* a_origin
 							}
 
 							// set collision layer
-							collisionFilterInfo &= ~0x7F;  // zero out collision layer
-							collisionFilterInfo |= static_cast<uint32_t>(collisionLayer);
+							collisionFilterInfo.filter &= ~0x7F;  // zero out collision layer
+							collisionFilterInfo.filter |= static_cast<uint32_t>(collisionLayer);
 						}
 					}
 				}

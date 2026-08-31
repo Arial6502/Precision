@@ -222,7 +222,7 @@ namespace Utils
 		return nullptr;
 	}
 
-	[[nodiscard]] bool GetActorCollisionFilterInfo(RE::Actor* a_actor, uint32_t& a_outCollisionFilterInfo);
+	[[nodiscard]] bool GetActorCollisionFilterInfo(RE::Actor* a_actor, RE::CFilter& a_outCollisionFilterInfo);
 
 	RE::BGSBodyPartData* GetBodyPartData(RE::Actor* a_actor);
 

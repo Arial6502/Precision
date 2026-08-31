@@ -89,9 +89,9 @@ extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []() {
 	v.PluginVersion(Plugin::VERSION);
 	v.PluginName(Plugin::NAME);
 	v.AuthorName("Ersh");
-	v.UsesAddressLibrary(true);
+	v.UsesAddressLibrary();
 	v.CompatibleVersions({ SKSE::RUNTIME_SSE_LATEST });
-	v.HasNoStructUse(true);
+	v.UsesNoStructs();
 
 	return v;
 }();
@@ -124,18 +124,6 @@ extern "C" DLLEXPORT bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* a_s
 
 extern "C" DLLEXPORT void* SKSEAPI RequestPluginAPI(const PRECISION_API::InterfaceVersion a_interfaceVersion)
 {
-	// Workaround so the old version of Accuracy doesn't receive the API. Should've designed the API a bit differently. Too late now.
-	HMODULE hModule = nullptr;
-	void* retAddr = _ReturnAddress();
-	GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, (LPCSTR)retAddr, &hModule);
-
-	if (hModule) {
-		SKSE::PluginVersionData* versionData = (SKSE::PluginVersionData*)SKSE::WinAPI::GetProcAddress(hModule, "SKSEPlugin_Version");
-		if (versionData && versionData->pluginName == "Accuracy"sv && versionData->pluginVersion < 0x20000) {
-			return nullptr;
-		}
-	}
-
 	auto api = Messaging::PrecisionInterface::GetSingleton();
 
 	logger::info("Precision::RequestPluginAPI called, InterfaceVersion {}", static_cast<uint8_t>(a_interfaceVersion) + 1);

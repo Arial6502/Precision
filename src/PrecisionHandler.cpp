@@ -1919,10 +1919,10 @@ bool PrecisionHandler::IsActorCharacterControllerHittable(RE::ActorHandle a_acto
 bool PrecisionHandler::IsCharacterControllerHittable(RE::bhkCharacterController* a_controller)
 {
 	if (a_controller) {
-		uint32_t filterInfo;
+		RE::CFilter filterInfo{};
 		a_controller->GetCollisionFilterInfo(filterInfo);
 
-		return IsCharacterControllerHittableCollisionGroup(filterInfo >> 16);
+		return IsCharacterControllerHittableCollisionGroup(filterInfo.filter >> 16);
 	}
 
 	return false;

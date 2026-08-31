@@ -153,22 +153,6 @@ namespace Hooks
 		}
 	}
 
-	RE::Actor* UpdateHooks::GetActorFromRbx()
-	{
-		struct GetActorFromRbx : Xbyak::CodeGenerator
-		{
-			GetActorFromRbx()
-			{
-				mov(rax, rbx);
-				ret();
-			}
-		};
-
-		static GetActorFromRbx getActorFromRbx;
-
-		return getActorFromRbx.getCode<RE::Actor* (*)()>()();
-	}
-
 	RE::Actor* AttackHooks::Func1(RE::Actor* a_this)
 	{
 		if (!Settings::bAttackCollisionsEnabled || Settings::bDisableMod || !PrecisionHandler::GetSingleton()->ActorHasAttackCollision(a_this->GetHandle())) {
@@ -422,18 +406,19 @@ namespace Hooks
 					return;
 				}
 
-				uint32_t filterInfo = 0;
+				RE::CFilter filterInfo{};
 				auto charController = actor->GetCharController();
 				if (charController) {
 					charController->GetCollisionFilterInfo(filterInfo);
 				}
-				uint16_t collisionGroup = filterInfo >> 16;
+				uint16_t collisionGroup = filterInfo.filter >> 16;
 
 				bool bIsHittableCharController = PrecisionHandler::IsCharacterControllerHittableCollisionGroup(collisionGroup);
 
 				bool bIsActorDisabled = PrecisionHandler::IsActorDisabled(actorHandle);
 
-				bool bIsActorDead = actor->IsDead();
+				const auto lifeState = actor->AsActorState()->GetLifeState();
+				bool bIsActorDead = lifeState == RE::ACTOR_LIFE_STATE::kDead || lifeState == RE::ACTOR_LIFE_STATE::kDying;
 
 				bool bShouldAddToWorld = !Settings::bDisableMod && !bIsActorDisabled && !bIsActorDead && actor->GetPosition().GetSquaredDistance(playerCharacter->GetPosition()) < startDistanceSq;
 				bool bShouldRemoveFromWorld = Settings::bDisableMod || bIsActorDisabled || bIsActorDead || actor->GetPosition().GetSquaredDistance(playerCharacter->GetPosition()) > endDistanceSq;
@@ -1168,7 +1153,7 @@ namespace Hooks
 									if (ragdollConstraint) {
 										constraint->RemoveFromCurrentWorld();
 
-										RE::bhkWorld* world = reinterpret_cast<RE::bhkWorld*>(wrapper->GetWorld2()->unk430);
+										RE::bhkWorld* world = reinterpret_cast<RE::bhkWorld*>(wrapper->GetWorld2()->userData);
 										ragdollConstraint->MoveToWorld(world);
 										unk = ragdollConstraint;
 									}
@@ -1999,46 +1984,48 @@ namespace Hooks
 			if (auto actor = a_actorHandle.get()) {
 				if (auto root = actor->Get3D(false)) {
 					auto rootNode = root->AsNode();
-					if (rootNode && actor->loadedData && actor->loadedData->unk58) {
-						auto pUnk58 = reinterpret_cast<Unk58**>(actor->loadedData->unk58);
-						if (auto unk58 = *pUnk58) {
-							if (auto skeleton = unk58->object) {
-								if (auto cell = actor->GetParentCell()) {
-									if (auto world = cell->GetbhkWorld()) {
-										float scale = actor->GetScale();
-										auto clone = RE::NiPointer<RE::NiAVObject>(Utils::Clone<RE::NiAVObject>(skeleton, { scale, scale, scale }));
-										if (clone) {
-											// set user data so collision callbacks can identify the hit actor
-											clone->SetUserData(actor.get());
-											//rootNode->AttachChild(clone.get());
+					if (rootNode && actor->loadedData) {
+						if (void* unk_58 = *reinterpret_cast<void**>(reinterpret_cast<uintptr_t>(actor->loadedData) + 0x58)) {
+							auto pUnk58 = static_cast<Unk58**>(unk_58);
+							if (auto unk58 = *pUnk58) {
+								if (auto skeleton = unk58->object) {
+									if (auto cell = actor->GetParentCell()) {
+										if (auto world = cell->GetbhkWorld()) {
+											float scale = actor->GetScale();
+											auto clone = RE::NiPointer<RE::NiAVObject>(Utils::Clone<RE::NiAVObject>(skeleton, { scale, scale, scale }));
+											if (clone) {
+												// set user data so collision callbacks can identify the hit actor
+												clone->SetUserData(actor.get());
+												//rootNode->AttachChild(clone.get());
 
-											// fix invalid motion type after cloning
-											Utils::TraverseAllScenegraphCollisions(clone.get(), [&](auto&& a_collisionObject) -> RE::BSVisit::BSVisitControl {
-												if (auto blendCollisionObject = skyrim_cast<RE::bhkBlendCollisionObject*>(a_collisionObject)) {
-													blendCollisionObject->motionType = RE::hkpMotion::MotionType::kKeyframed;
+												// fix invalid motion type after cloning
+												Utils::TraverseAllScenegraphCollisions(clone.get(), [&](auto&& a_collisionObject) -> RE::BSVisit::BSVisitControl {
+													if (auto blendCollisionObject = skyrim_cast<RE::bhkBlendCollisionObject*>(a_collisionObject)) {
+														blendCollisionObject->motionType = RE::hkpMotion::MotionType::kKeyframed;
+													}
+													return RE::BSVisit::BSVisitControl::kContinue;
+												});
+
+												RE::CFilter collisionFilterInfo{};
+												actor->GetCollisionFilterInfo(collisionFilterInfo);
+												uint16_t collisionGroup = collisionFilterInfo.filter >> 16;
+
+												CollisionLayer collisionLayer = CollisionLayer::kPrecisionBody;
+
+												{
+													WriteLocker locker(PrecisionHandler::activeActorsLock);
+
+													PrecisionHandler::activeActors.emplace(a_actorHandle, std::make_shared<ActiveActor>(a_actorHandle, root, clone.get(), collisionGroup, collisionLayer));
 												}
-												return RE::BSVisit::BSVisitControl::kContinue;
-											});
 
-											uint32_t collisionFilterInfo;
-											actor->GetCollisionFilterInfo(collisionFilterInfo);
-											uint16_t collisionGroup = collisionFilterInfo >> 16;
+												typedef void (__thiscall RE::bhkWorld::*AddHavok)(RE::NiAVObject* a_node, bool a_recurse, bool a_notify, uint32_t a_collisionGroup, bool a_ignoreBSXFlags);
 
-											CollisionLayer collisionLayer = CollisionLayer::kPrecisionBody;
+												*g_bAddBipedWhenKeyframedIndirect = true;
+												(world->*reinterpret_cast<AddHavok>(&RE::bhkWorld::Unk_35))(clone.get(), true, true, collisionGroup, false);
+												*g_bAddBipedWhenKeyframedIndirect = false;
 
-											{
-												WriteLocker locker(PrecisionHandler::activeActorsLock);
-
-												PrecisionHandler::activeActors.emplace(a_actorHandle, std::make_shared<ActiveActor>(a_actorHandle, root, clone.get(), collisionGroup, collisionLayer));
+												return true;
 											}
-
-											typedef void (__thiscall RE::bhkWorld::*AddHavok)(RE::NiAVObject * a_node, bool a_recurse, bool a_notify, uint32_t a_collisionGroup, bool a_ignoreBSXFlags);
-
-											*g_bAddBipedWhenKeyframedIndirect = true;
-											(world->*reinterpret_cast<AddHavok>(&RE::bhkWorld::Unk_35))(clone.get(), true, true, collisionGroup, false);
-											*g_bAddBipedWhenKeyframedIndirect = false;
-
-											return true;
 										}
 									}
 								}

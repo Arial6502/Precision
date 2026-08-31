@@ -126,6 +126,25 @@ enum class CollisionLayer
 
 #define DLLEXPORT __declspec(dllexport)
 
-#define RELOCATION_OFFSET(SE, AE) REL::VariantOffset(SE, AE, 0).offset()
+[[nodiscard]] inline std::size_t RelocationOffset(
+	std::size_t a_se,
+	std::size_t a_ae) noexcept
+{
+	return REL::VariantOffset(a_se, a_ae, 0).offset();
+}
+
+[[nodiscard]] inline std::size_t RelocationOffset(
+	std::size_t a_se,
+	std::size_t a_aePre1799,
+	std::size_t a_ae1799) noexcept
+{
+	return REL::VariantOffset(
+		a_se,
+		(REL::Module::IsAtLeast(SKSE::RUNTIME_SSE_1_7_99) ? a_ae1799 : a_aePre1799),
+		0)
+	    .offset();
+}
+
+#define RELOCATION_OFFSET(...) RelocationOffset(__VA_ARGS__)
 
 #include "Plugin.h"

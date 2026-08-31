@@ -1,62 +1,11 @@
 set(ROOT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/..")
 
 set(SOURCE_DIR "${ROOT_DIR}/src")
-set(SOURCE_FILES
-	"${SOURCE_DIR}/ActiveActor.cpp"
-	"${SOURCE_DIR}/ActiveActor.h"
-	"${SOURCE_DIR}/AttackCollision.cpp"
-	"${SOURCE_DIR}/AttackCollision.h"
-	"${SOURCE_DIR}/AttackTrail.cpp"
-	"${SOURCE_DIR}/AttackTrail.h"
-	"${SOURCE_DIR}/CachedAttackData.h"
-	"${SOURCE_DIR}/Events.cpp"
-	"${SOURCE_DIR}/Events.h"
-	"${SOURCE_DIR}/HitRefs.cpp"
-	"${SOURCE_DIR}/HitRefs.h"
-	"${SOURCE_DIR}/Hooks.cpp"
-	"${SOURCE_DIR}/Hooks.h"
-	"${SOURCE_DIR}/main.cpp"
-	"${SOURCE_DIR}/ModAPI.cpp"
-	"${SOURCE_DIR}/ModAPI.h"
-	"${SOURCE_DIR}/Offsets.h"
-	"${SOURCE_DIR}/Papyrus.cpp"
-	"${SOURCE_DIR}/Papyrus.h"
-	"${SOURCE_DIR}/PCH.h"
-	"${SOURCE_DIR}/PendingHit.cpp"
-	"${SOURCE_DIR}/PendingHit.h"
-	"${SOURCE_DIR}/PrecisionAPI.h"
-	"${SOURCE_DIR}/PrecisionHandler.cpp"
-	"${SOURCE_DIR}/PrecisionHandler.h"
-	"${SOURCE_DIR}/Settings.cpp"
-	"${SOURCE_DIR}/Settings.h"
-	"${SOURCE_DIR}/Utils.cpp"
-	"${SOURCE_DIR}/Utils.h"
-	"${SOURCE_DIR}/Havok/ActiveRagdoll.h"
-	"${SOURCE_DIR}/Havok/Blender.cpp"
-	"${SOURCE_DIR}/Havok/Blender.h"
-	"${SOURCE_DIR}/Havok/ContactListener.cpp"
-	"${SOURCE_DIR}/Havok/ContactListener.h"
-	"${SOURCE_DIR}/Havok/Havok.cpp"
-	"${SOURCE_DIR}/Havok/Havok.h"
-	"${SOURCE_DIR}/render/cbuffer.cpp"
-	"${SOURCE_DIR}/render/cbuffer.h"
-	"${SOURCE_DIR}/render/common.cpp"
-	"${SOURCE_DIR}/render/common.h"
-	"${SOURCE_DIR}/render/d3d_context.cpp"
-	"${SOURCE_DIR}/render/d3d_context.h"
-	"${SOURCE_DIR}/render/DrawHandler.cpp"
-	"${SOURCE_DIR}/render/DrawHandler.h"
-	"${SOURCE_DIR}/render/line_drawer.cpp"
-	"${SOURCE_DIR}/render/line_drawer.h"
-	"${SOURCE_DIR}/render/shader.cpp"
-	"${SOURCE_DIR}/render/shader.h"
-	"${SOURCE_DIR}/render/timer.cpp"
-	"${SOURCE_DIR}/render/timer.h"
-	"${SOURCE_DIR}/render/vertex_buffer.cpp"
-	"${SOURCE_DIR}/render/vertex_buffer.h"
-	"${SOURCE_DIR}/render/shaders/shader_vertex_color.h"
-	"${SOURCE_DIR}/utilities/ITimer.cpp"
-	"${SOURCE_DIR}/utilities/ITimer.h"
+file(
+	GLOB_RECURSE SOURCE_FILES
+	CONFIGURE_DEPENDS
+		"${SOURCE_DIR}/*.cpp"
+		"${SOURCE_DIR}/*.h"
 )
 
 source_group(TREE "${ROOT_DIR}" FILES ${SOURCE_FILES})
@@ -92,6 +41,12 @@ target_compile_features(
 		cxx_std_20
 )
 
+target_compile_definitions(
+	"${PROJECT_NAME}"
+	PRIVATE
+		NOMINMAX
+)
+
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 	target_compile_options(
 		"${PROJECT_NAME}"
@@ -99,8 +54,6 @@ if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
 			"/sdl"	# Enable Additional Security Checks
 			"/utf-8"	# Set Source and Executable character sets to UTF-8
 #			"/Zi"	# Debug Information Format
-
-			"/await"
 
 			"/permissive-"	# Standards conformance
 			"/Zc:preprocessor"	# Enable preprocessor conformance mode
@@ -128,7 +81,7 @@ target_include_directories(
 
 set(SKSE_SUPPORT_XBYAK ON)
 
-add_subdirectory("$ENV{CommonLibSSEPath_NG}" CommonLibSSE EXCLUDE_FROM_ALL)
+add_subdirectory("$ENV{CommonLibSSEPath}" CommonLibSSE EXCLUDE_FROM_ALL)
 
 add_subdirectory("${ROOT_DIR}/extern/glm" glm)
 

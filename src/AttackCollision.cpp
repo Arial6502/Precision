@@ -600,13 +600,13 @@ bool AttackCollision::CreateCollision(RE::bhkWorld* a_world, RE::Actor* a_actor,
 	RE::bhkRigidBodyCinfo cInfo;
 	bhkRigidBodyCinfo_ctor(&cInfo);
 
-	uint32_t collisionFilterInfo = 0;
+	RE::CFilter collisionFilterInfo{};
 
 	if (!Utils::GetActorCollisionFilterInfo(a_actor, collisionFilterInfo)) {
 		a_actor->GetCollisionFilterInfo(collisionFilterInfo);
 	}
 
-	uint16_t collisionGroup = collisionFilterInfo >> 16;
+	uint16_t collisionGroup = collisionFilterInfo.filter >> 16;
 
 	cInfo.collisionFilterInfo = (uint32_t)collisionGroup << 16 | static_cast<uint32_t>(a_collisionLayer);
 	cInfo.hkCinfo.collisionFilterInfo = (uint32_t)collisionGroup << 16 | static_cast<uint32_t>(a_collisionLayer);
