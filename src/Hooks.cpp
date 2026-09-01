@@ -417,8 +417,7 @@ namespace Hooks
 
 				bool bIsActorDisabled = PrecisionHandler::IsActorDisabled(actorHandle);
 
-				const auto lifeState = actor->AsActorState()->GetLifeState();
-				bool bIsActorDead = lifeState == RE::ACTOR_LIFE_STATE::kDead || lifeState == RE::ACTOR_LIFE_STATE::kDying;
+				bool bIsActorDead = actor->IsDead();
 
 				bool bShouldAddToWorld = !Settings::bDisableMod && !bIsActorDisabled && !bIsActorDead && actor->GetPosition().GetSquaredDistance(playerCharacter->GetPosition()) < startDistanceSq;
 				bool bShouldRemoveFromWorld = Settings::bDisableMod || bIsActorDisabled || bIsActorDead || actor->GetPosition().GetSquaredDistance(playerCharacter->GetPosition()) > endDistanceSq;
@@ -1579,7 +1578,7 @@ namespace Hooks
 		if (auto root = actor->Get3D()) {
 			if (poseHeader && poseHeader->onFraction > 0.f && worldFromModelHeader && worldFromModelHeader->onFraction > 0.f) {
 				if (a_driver->ragdoll->skeleton->bones.size() > 0) {
-					if (int32_t rootIndex = a_driver->ragdoll->boneToRigidBodyMap[0] >= 0) {
+					if (const int32_t rootIndex = a_driver->ragdoll->boneToRigidBodyMap[0]; rootIndex >= 0) {
 						if (auto rootRigidBody = a_driver->ragdoll->rigidBodies[rootIndex]) {
 							if (auto rootNode = RE::NiPointer<RE::NiAVObject>(GetNiObjectFromCollidable(&rootRigidBody->collidable))) {
 								const RE::hkQsTransform& worldFromModel = *(RE::hkQsTransform*)Track_getData(a_generatorOutput, *worldFromModelHeader);
@@ -1611,7 +1610,7 @@ namespace Hooks
 										ragdoll->rootOffset.Length() > Settings::fMaxAllowedDistBeforeWarp) {
 										// Set rigidbody transforms to the anim pose ones
 										for (int i = 0; i < std::size(poseWorld); i++) {
-											if (int32_t index = a_driver->ragdoll->boneToRigidBodyMap[i] >= 0) {
+											if (const int32_t index = a_driver->ragdoll->boneToRigidBodyMap[i]; index >= 0) {
 												if (auto rb = a_driver->ragdoll->rigidBodies[index]) {
 													RE::hkQsTransform& transform = poseWorld[i];
 
