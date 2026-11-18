@@ -88,7 +88,7 @@ extern "C" DLLEXPORT constinit auto SKSEPlugin_Version = []() {
 
 	v.PluginVersion(Plugin::VERSION);
 	v.PluginName(Plugin::NAME);
-	v.AuthorName("Ersh");
+	v.AuthorName("Arial6502, Original Author: Ersh");
 	v.UsesAddressLibrary();
 	v.CompatibleVersions({ SKSE::RUNTIME_SSE_LATEST });
 	v.UsesNoStructs();
