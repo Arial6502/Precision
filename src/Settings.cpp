@@ -674,7 +674,6 @@ void Settings::ReadSettings()
 		ReadFloatSetting(mcm, "Recoil", "fRecoilCameraShakeFrequency", fRecoilCameraShakeFrequency);
 
 		// Hit Impulse
-		ReadBoolSetting(mcm, "HitImpulse", "bApplyImpulseOnHit", bApplyImpulseOnHit);
 		ReadBoolSetting(mcm, "HitImpulse", "bApplyImpulseOnKill", bApplyImpulseOnKill);
 		ReadFloatSetting(mcm, "HitImpulse", "fHitImpulseBaseMult", fHitImpulseBaseMult);
 		ReadFloatSetting(mcm, "HitImpulse", "fHitImpulseBlockMult", fHitImpulseBlockMult);

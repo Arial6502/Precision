@@ -267,7 +267,7 @@ void PrecisionHandler::Update(float a_deltaTime)
 
 void PrecisionHandler::ApplyHitImpulse(RE::ObjectRefHandle a_refHandle, RE::hkpRigidBody* a_rigidBody, const RE::NiPoint3& a_hitVelocity, const RE::hkVector4& a_hitPosition, float a_impulseMult, bool a_bIsActiveRagdoll, bool a_bAttackerIsPlayer, bool a_bIsDeferred /*= false */)
 {
-	if (!a_refHandle) {
+	if (!a_refHandle || !Settings::bApplyImpulseOnHit) {
 		return;
 	}
 

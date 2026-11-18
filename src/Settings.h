@@ -199,7 +199,7 @@ struct Settings
 	static inline float fRecoilCameraShakeFrequency = 40.f;
 
 	// Hit Impulse
-	static inline bool bApplyImpulseOnHit = true;
+	static inline bool bApplyImpulseOnHit = false;
 	static inline bool bApplyImpulseOnKill = true;
 	static inline float fHitImpulseBaseMult = 1.f;
 	static inline float fHitImpulseBlockMult = 0.6f;
