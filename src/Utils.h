@@ -313,6 +313,28 @@ namespace Utils
 
 	void FillCloningProcess(RE::NiCloningProcess& a_cloningProcess, const RE::NiPoint3& a_scale);
 
+	[[nodiscard]] inline float GetScale(const RE::Actor* a_actor)
+	{
+		RE::NiAVObject* model = a_actor ? a_actor->Get3D(false) : nullptr;
+		if (!model && a_actor) {
+			model = a_actor->Get3D(true);
+		}
+		if (!model) {
+			return 1.f;
+		}
+
+		static const RE::BSFixedString npcNode{ "NPC" };
+		static const RE::BSFixedString npcRootNode{ "NPC Root [Root]" };
+
+		float scale = model->local.scale;
+		for (const auto& name : { npcNode, npcRootNode }) {
+			if (auto node = model->GetObjectByName(name)) {
+				scale *= node->local.scale;
+			}
+		}
+		return std::clamp(scale, 0.15f, 250.f);
+	}
+
 	[[nodiscard]] inline float GetUnarmedReach(RE::Actor* a_actor)
 	{
 		if (auto race = a_actor->GetRace()) {

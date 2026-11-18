@@ -1,5 +1,6 @@
 #include "PendingHit.h"
 
+#include "Havok/Scaling.h"
 #include "PrecisionHandler.h"
 #include "Settings.h"
 #include "Utils.h"
@@ -300,7 +301,13 @@ void PendingHit::Run()
 					auto targetHandle = targetActor->GetHandle();
 
 					bool bAttackerIsPlayer = attacker->IsPlayerRef();
-					precisionHandler->ApplyHitImpulse(targetHandle, originalHitRigidBody, niHitVelocity, contactPoint.position, impulseMult, bIsActiveRagdoll, bAttackerIsPlayer, false);
+					if (Settings::bDebug) {
+						if (auto activeActor = PrecisionHandler::GetActiveActor(targetHandle)) {
+							activeActor->LogScales("hit");
+						}
+					}
+					auto hitPosition = originalHitRigidBody != hitRigidBody ? Scaling::MapPointBetweenBodies(hitRigidBody, originalHitRigidBody, contactPoint.position) : contactPoint.position;
+					precisionHandler->ApplyHitImpulse(targetHandle, originalHitRigidBody, niHitVelocity, hitPosition, impulseMult, bIsActiveRagdoll, bAttackerIsPlayer, false);
 				}
 			}
 		}

@@ -4,18 +4,41 @@
 #include "PrecisionHandler.h"
 #include "Utils.h"
 
-ActiveActor::ActiveActor(RE::ActorHandle a_actorHandle, RE::NiAVObject* a_root, RE::NiAVObject* a_clone, uint16_t a_currentCollisionGroup, CollisionLayer a_collisionLayer) :
+namespace
+{
+	constexpr float kMinScale = 0.15f;
+	constexpr float kMaxScale = 250.f;
+}
+
+ActiveActor::ActiveActor(RE::ActorHandle a_actorHandle, RE::NiAVObject* a_root, RE::NiAVObject* a_clone, RE::NiAVObject* a_template, uint16_t a_currentCollisionGroup, CollisionLayer a_collisionLayer) :
 	actorHandle(a_actorHandle),
 	root(a_root),
 	clone(a_clone),
+	templateRoot(a_template),
 	collisionGroup(a_currentCollisionGroup),
 	collisionLayer(a_collisionLayer)
 {
-	if (auto actor = actorHandle.get()) {
-		actorScale = actor->GetScale();
+	FillCloneMap(a_clone, a_root);
+
+	std::unordered_set<RE::bhkRigidBody*> seen;
+	for (auto& [cloneNode, originalNode] : cloneToOriginalMap) {
+		auto templateNode = a_template->GetObjectByName(cloneNode->name);
+		if (!templateNode) {
+			continue;
+		}
+		if (auto body = Scaling::MakeBody(cloneNode, templateNode, false); body && seen.insert(body->wrapper).second) {
+			body->node = cloneNode;
+			body->templateWorldScale = Scaling::GetTemplateWorldScale(templateNode);
+			cloneBodies.push_back(*body);
+		}
+		if (auto body = Scaling::MakeBody(originalNode, templateNode, true); body && seen.insert(body->wrapper).second) {
+			ragdollBodies.push_back(*body);
+		}
 	}
 
-	FillCloneMap(a_clone, a_root);
+	if (!ragdollBodies.empty()) {
+		ragdollScale = ragdollBodies.front().applied;
+	}
 
 	// Add to active collision groups
 	{
@@ -65,12 +88,6 @@ bool ActiveActor::UpdateClone()
 	// Early out if the actor's root node has changed (e.g. post-racemenu)
 	auto currentRoot = actor->Get3D(false);
 	if (currentRoot != root.get()) {
-		return false;
-	}
-
-	// Early out if the actor's scale has changed
-	auto currentScale = actor->GetScale();
-	if (currentScale != actorScale) {
 		return false;
 	}
 
@@ -132,7 +149,63 @@ bool ActiveActor::UpdateClone()
 
 	clone->Update(updateData);
 
+	UpdateScale();
+
 	return true;
+}
+
+void ActiveActor::UpdateScale()
+{
+	if (!cloneBodies.empty()) {
+		auto body = cloneBodies.front().wrapper ? cloneBodies.front().wrapper->GetRigidBody() : nullptr;
+		if (body && body->world && body->world->criticalOperationsLockCount != 0) {
+			return;
+		}
+	}
+
+	for (auto& body : cloneBodies) {
+		Scaling::Apply(body, std::clamp(body.node->world.scale / body.templateWorldScale, kMinScale, kMaxScale));
+	}
+
+	const float scale = std::clamp(root->world.scale, kMinScale, kMaxScale);
+	if (std::abs(scale - ragdollScale) < 1e-4f) {
+		return;
+	}
+
+	for (auto& body : ragdollBodies) {
+		Scaling::Apply(body, scale);
+	}
+	const auto [scaled, total] = Scaling::ScaleConstraints(ragdollBodies, scale / ragdollScale);
+	ragdollScale = scale;
+	if (Settings::bDebug && std::abs(scale - loggedRagdollScale) > 0.25f) {
+		LogScales(fmt::format("ragdoll {:.2f} -> {:.2f}, {} bodies, {}/{} constraints scaled", loggedRagdollScale, scale, ragdollBodies.size(), scaled, total));
+		loggedRagdollScale = scale;
+	}
+}
+
+void ActiveActor::LogScales(std::string_view a_reason) const
+{
+	static const RE::BSFixedString npcName{ "NPC" };
+	static const RE::BSFixedString npcRootName{ "NPC Root [Root]" };
+
+	auto npc = root->GetObjectByName(npcName);
+	auto npcRoot = root->GetObjectByName(npcRootName);
+
+	float worldFromModelScale = 0.f;
+	if (auto actor = actorHandle.get()) {
+		Utils::ForEachRagdollDriver(actor.get(), [&](RE::hkbRagdollDriver* a_driver) {
+			if (auto ragdoll = PrecisionHandler::GetActiveRagdollFromDriver(a_driver)) {
+				worldFromModelScale = ragdoll->worldFromModel.scale.quad.m128_f32[0];
+			}
+		});
+	}
+
+	logger::info("Scales {:X} [{}]: root {:.3f}/{:.3f}, NPC {:.3f}/{:.3f}, NPC Root {:.3f}/{:.3f}, worldFromModel {:.3f}, ragdoll applied {:.3f}",
+		actorHandle.native_handle(), a_reason,
+		root->local.scale, root->world.scale,
+		npc ? npc->local.scale : 0.f, npc ? npc->world.scale : 0.f,
+		npcRoot ? npcRoot->local.scale : 0.f, npcRoot ? npcRoot->world.scale : 0.f,
+		worldFromModelScale, ragdollScale);
 }
 
 bool ActiveActor::CheckInCombat()

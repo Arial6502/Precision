@@ -5,6 +5,7 @@
 #include "CachedAttackData.h"
 #include "Havok/ActiveRagdoll.h"
 #include "Havok/ContactListener.h"
+#include "Havok/Scaling.h"
 #include "Offsets.h"
 #include "PendingHit.h"
 #include "PrecisionAPI.h"
@@ -317,6 +318,9 @@ public:
 							hkpEntity_Activate(rigidBody);
 							RE::NiPoint3 impulse;
 							if (PrecisionHandler::CalculateHitImpulse(rigidBody, hitVelocity, impulseMult, bIsActiveRagdoll, bAttackerIsPlayer, impulse)) {
+								if (Settings::bDebug) {
+									logger::info("Hit impulse on {:X}: lever {:.3f} body size {:.3f} mass {:.2f} impulse {:.2f}", ptr->GetFormID(), hitPoint.GetDistance3(rigidBody->motion.motionState.sweptTransform.centerOfMass1), Scaling::GetShapeSize(rigidBody->collidable.shape), 1.f / rigidBody->motion.inertiaAndMassInv.quad.m128_f32[3], impulse.Length());
+								}
 								rigidBody->motion.ApplyPointImpulse(Utils::NiPointToHkVector(impulse), hitPoint);
 							}
 						}

@@ -1990,8 +1990,7 @@ namespace Hooks
 								if (auto skeleton = unk58->object) {
 									if (auto cell = actor->GetParentCell()) {
 										if (auto world = cell->GetbhkWorld()) {
-											float scale = actor->GetScale();
-											auto clone = RE::NiPointer<RE::NiAVObject>(Utils::Clone<RE::NiAVObject>(skeleton, { scale, scale, scale }));
+											auto clone = RE::NiPointer<RE::NiAVObject>(Utils::Clone<RE::NiAVObject>(skeleton, { 1.f, 1.f, 1.f }));
 											if (clone) {
 												// set user data so collision callbacks can identify the hit actor
 												clone->SetUserData(actor.get());
@@ -2014,7 +2013,7 @@ namespace Hooks
 												{
 													WriteLocker locker(PrecisionHandler::activeActorsLock);
 
-													PrecisionHandler::activeActors.emplace(a_actorHandle, std::make_shared<ActiveActor>(a_actorHandle, root, clone.get(), collisionGroup, collisionLayer));
+													PrecisionHandler::activeActors.emplace(a_actorHandle, std::make_shared<ActiveActor>(a_actorHandle, root, clone.get(), skeleton, collisionGroup, collisionLayer));
 												}
 
 												typedef void (__thiscall RE::bhkWorld::*AddHavok)(RE::NiAVObject* a_node, bool a_recurse, bool a_notify, uint32_t a_collisionGroup, bool a_ignoreBSXFlags);
@@ -2139,7 +2138,7 @@ namespace Hooks
 			if (a_actor) {
 				if (auto& currentProcess = a_actor->GetActorRuntimeData().currentProcess) {
 					if (currentProcess->cachedValues) {
-						float radius = currentProcess->cachedValues->cachedRadius / a_actor->GetScale();
+						float radius = currentProcess->cachedValues->cachedRadius / Utils::GetScale(a_actor);
 						float lengthMult = PrecisionHandler::GetAttackLengthMult(a_actor);
 						float reach = (Settings::fMinWeaponLength + Settings::fWeaponLengthUnarmedOffset + Settings::fAIWeaponReachOffset) * lengthMult + radius;
 						return std::fmin(reach, _GetUnarmedReach(a_actor));
