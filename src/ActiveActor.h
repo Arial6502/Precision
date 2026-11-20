@@ -49,6 +49,6 @@ public:
 
 private:
 	void FillCloneMap(RE::NiAVObject* a_clone, RE::NiAVObject* a_original);
-	void UpdateScale();
+	bool UpdateScale();
 	bool IsNodeDeadEnd(RE::NiAVObject* a_object);
 };

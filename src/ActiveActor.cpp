@@ -26,12 +26,11 @@ ActiveActor::ActiveActor(RE::ActorHandle a_actorHandle, RE::NiAVObject* a_root, 
 		if (!templateNode) {
 			continue;
 		}
-		if (auto body = Scaling::MakeBody(cloneNode, templateNode, false); body && seen.insert(body->wrapper).second) {
-			body->node = cloneNode;
+		if (auto body = Scaling::MakeBody(cloneNode, templateNode, false); body && seen.insert(body->wrapper.get()).second) {
 			body->templateWorldScale = Scaling::GetTemplateWorldScale(templateNode);
 			cloneBodies.push_back(*body);
 		}
-		if (auto body = Scaling::MakeBody(originalNode, templateNode, true); body && seen.insert(body->wrapper).second) {
+		if (auto body = Scaling::MakeBody(originalNode, templateNode, true); body && seen.insert(body->wrapper.get()).second) {
 			ragdollBodies.push_back(*body);
 		}
 	}
@@ -149,17 +148,22 @@ bool ActiveActor::UpdateClone()
 
 	clone->Update(updateData);
 
-	UpdateScale();
-
-	return true;
+	return UpdateScale();
 }
 
-void ActiveActor::UpdateScale()
+bool ActiveActor::UpdateScale()
 {
+	const auto isStale = [](const Scaling::Body& a_body) {
+		return a_body.wrapper && Utils::GetRigidBody(a_body.node.get()) != a_body.wrapper.get();
+	};
+	if (std::ranges::any_of(cloneBodies, isStale) || std::ranges::any_of(ragdollBodies, isStale)) {
+		return false;
+	}
+
 	if (!cloneBodies.empty()) {
 		auto body = cloneBodies.front().wrapper ? cloneBodies.front().wrapper->GetRigidBody() : nullptr;
 		if (body && body->world && body->world->criticalOperationsLockCount != 0) {
-			return;
+			return true;
 		}
 	}
 
@@ -169,7 +173,7 @@ void ActiveActor::UpdateScale()
 
 	const float scale = std::clamp(root->world.scale, kMinScale, kMaxScale);
 	if (std::abs(scale - ragdollScale) < 1e-4f) {
-		return;
+		return true;
 	}
 
 	for (auto& body : ragdollBodies) {
@@ -181,6 +185,7 @@ void ActiveActor::UpdateScale()
 		LogScales(fmt::format("ragdoll {:.2f} -> {:.2f}, {} bodies, {}/{} constraints scaled", loggedRagdollScale, scale, ragdollBodies.size(), scaled, total));
 		loggedRagdollScale = scale;
 	}
+	return true;
 }
 
 void ActiveActor::LogScales(std::string_view a_reason) const

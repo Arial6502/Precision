@@ -373,7 +373,7 @@ namespace Scaling
 			return std::nullopt;
 		}
 
-		Body ret{ .wrapper = wrapper, .templateShape = templateShape, .bIsRagdoll = a_bIsRagdoll };
+		Body ret{ .wrapper = RE::NiPointer{ wrapper }, .templateShape = templateShape, .node = RE::NiPointer{ a_node }, .bIsRagdoll = a_bIsRagdoll };
 
 		auto templateT = AsRigidBodyT(templateWrapper);
 		if (templateT && AsRigidBodyT(wrapper)) {
@@ -422,13 +422,13 @@ namespace Scaling
 		} else {
 			a_body.installed = Own(body, a_body.templateShape, a_scale);
 			if (!a_body.installed) {
-				a_body.wrapper = nullptr;
+				a_body.wrapper.reset();
 				return;
 			}
 		}
 
 		if (a_body.templateTranslation) {
-			AsRigidBodyT(a_body.wrapper)->translation = *a_body.templateTranslation * a_scale;
+			AsRigidBodyT(a_body.wrapper.get())->translation = *a_body.templateTranslation * a_scale;
 		}
 
 		if (a_body.bIsRagdoll) {

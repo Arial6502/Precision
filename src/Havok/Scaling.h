@@ -4,11 +4,11 @@ namespace Scaling
 {
 	struct Body
 	{
-		RE::bhkRigidBody* wrapper = nullptr;
+		RE::NiPointer<RE::bhkRigidBody> wrapper;
 		const RE::hkpShape* templateShape = nullptr;
 		std::optional<RE::hkVector4> templateTranslation;
 		const RE::hkpShape* installed = nullptr;
-		RE::NiAVObject* node = nullptr;
+		RE::NiPointer<RE::NiAVObject> node;
 		float templateWorldScale = 1.f;
 		float applied = 1.f;
 		bool bIsRagdoll = false;
